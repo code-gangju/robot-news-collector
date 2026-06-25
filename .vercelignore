@@ -1,0 +1,12 @@
+collector.py
+requirements.txt
+__pycache__
+*.pyc
+.env
+.env.local.txt
+.github
+.claude
+app
+components
+lib
+types
