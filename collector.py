@@ -17,7 +17,8 @@ from html.parser import HTMLParser
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()                           # .env
+load_dotenv(".env.local", override=True)  # .env.local (Next.js 관행)
 
 # ── 설정 ─────────────────────────────────────────────────────────
 SUPABASE_URL  = os.environ["SUPABASE_URL"]
@@ -65,13 +66,11 @@ def fetch_google_news(keyword: str, max_results: int = 10) -> list[dict]:
 
     articles: list[dict] = []
     for entry in feed.entries[:max_results]:
-        rss_desc = strip_html(getattr(entry, "summary", "") or "")
-
         articles.append({
             "title":   entry.title,
             "url":     entry.link,
             "media":   entry.get("source", {}).get("title", "Google News"),
-            "summary": rss_desc or None,  # 나중에 Claude가 덮어씀
+            "summary": None,  # Gemini가 생성. RSS desc는 제목 반복이라 저장 안 함
         })
 
     return articles
@@ -132,14 +131,16 @@ def summarize_with_gemini(title: str, rss_summary: str) -> str:
         source_text += f"\n내용: {rss_summary}"
 
     prompt = (
-        f"{source_text}\n\n"
-        "위 로봇 관련 뉴스를 '누가 무엇을 했다' 형식으로 "
-        "한국어 한 문장(60자 이내)으로 요약해줘. "
-        "주어와 서술어를 갖춰서 써줘. 부연 설명은 빼줘."
+        f"뉴스 제목: {title}\n\n"
+        "이 제목만 보고 독자가 기사를 클릭하기 전에 핵심 내용을 파악할 수 있도록 "
+        "한국어 한 문장(40~70자)으로 설명해줘. "
+        "규칙: ① 제목 문구를 그대로 반복하지 말 것 "
+        "② 이 뉴스가 왜 중요한지 또는 어떤 의미인지 포함할 것 "
+        "③ 추측이나 과장 없이 제목에서 유추 가능한 사실만 쓸 것"
     )
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash-lite",
+        model="gemini-2.0-flash",
         contents=prompt,
     )
     return response.text.strip()
@@ -156,7 +157,7 @@ def save_to_supabase(db: Client, articles: list[dict]) -> int:
 
     result = (
         db.table("news")
-        .upsert(articles, on_conflict="url", ignore_duplicates=True)
+        .upsert(articles, on_conflict="url", ignore_duplicates=False)
         .execute()
     )
     return len(result.data)
@@ -203,7 +204,7 @@ def main() -> None:
                     article.get("summary") or "",
                 )
                 print(f"  [{i:02d}/{len(all_articles)}] {article['title'][:45]}...")
-                time.sleep(0.3)  # API 속도 제한 여유 확보
+                time.sleep(4)  # 무료 티어: 분당 15회 제한 → 4초 간격
             except Exception as e:
                 print(f"  ⚠️  요약 실패 — {article['title'][:35]}...: {e}")
     else:

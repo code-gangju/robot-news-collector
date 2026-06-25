@@ -2,3 +2,5 @@
 .env.local.txt
 __pycache__/
 *.pyc
+
+.vercel
