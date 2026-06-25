@@ -1,0 +1,32 @@
+name: Daily Robot News Collection
+
+on:
+  schedule:
+    # 매일 오전 8시 (KST) = 전날 23:00 UTC
+    - cron: '0 23 * * *'
+  # GitHub에서 수동으로 즉시 실행할 수 있는 버튼 추가
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'   # 의존성 캐싱으로 실행 속도 향상
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 뉴스 수집 실행
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python collector.py

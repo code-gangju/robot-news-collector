@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"C:\\\\Users\\\\L2404161\\\\Desktop\\\\도로공사_바이브코딩\\\\개인프로젝트\"; $env:PYTHONIOENCODING=\"utf-8\"; python -X utf8 collector.py 2>&1)",
+      "PowerShell(\\(Get-Item \"C:\\\\Users\\\\L2404161\\\\Desktop\\\\도로공사_바이브코딩\\\\개인프로젝트\\\\.env.local.txt\"\\).LastWriteTime)",
+      "Artifact"
+    ]
+  }
+}
